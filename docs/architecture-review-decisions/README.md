@@ -2,6 +2,8 @@
 
 Design notes and values for the DevZero IDP GitOps control plane.
 
+Control-plane ADRs and hub–spoke ops docs: **[../README.md](../README.md)** · **[ADR-0001](../adr/0001-hub-spoke-argocd-agents.md)**.
+
 ## Vault
 
 | File | Purpose |

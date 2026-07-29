@@ -1,95 +1,17 @@
-# Hub–spoke Argo CD Agent architecture
+# FILE_NAME: hub-spoke-architecture.md
+# DESCRIPTION: Legacy pointer — hub–spoke docs moved under docs/architecture and docs/adr
+# VERSION: 2.0.0
+# AUTHORS: ravichandrapatel
 
-## Overview
+# Hub–spoke architecture (moved)
 
-This control plane uses an **Argo CD hub** plus **spoke Argo CD Agents** in autonomous mode.
+This page is kept as a stable link. Content now lives under:
 
-- **Hub** installs spoke Argo CD (once) and pushes thin **spoke root Applications** onto registered clusters (`enable_argocd=true`).
-- **Spoke agents** reconcile addons and NaaS **in-cluster** (`destination.server: https://kubernetes.default.svc`). Hub does **not** push addon workloads with `destination.name` for those AppSets.
-
-Repos:
-
-| Repo | Role |
+| Doc | Path |
 | --- | --- |
-| [idp-gitops-bridge](https://github.com/ravichandrapatel/idp-gitops-bridge) | Hub bootstrap, hub AppSets, spoke root apps, spoke addon AppSets |
-| [idp-argocd-apps](https://github.com/ravichandrapatel/idp-argocd-apps) | NaaS ApplicationSet + `env/<env>/<cluster>/<tenant>.yaml` |
-
-## Mermaid
-
-```mermaid
-flowchart TB
-  subgraph Hub["Hub cluster — Argo CD"]
-    BOOT["bootstrap-hub-addons<br/>exclude/bootstrap.yaml"]
-    HUB["addons/hub/<br/>argo-cd + spoke-root AppSets"]
-    BOOT --> HUB
-  end
-
-  subgraph Spoke["Spoke cluster — Argo CD Agent (autonomous)"]
-    ROOT["spoke root Apps<br/>bootstrap/spoke/root-apps/"]
-    ADD["spoke-addons → addons/spoke/"]
-    NAAS["spoke-naas → idp-argocd-apps/appsets"]
-    ROOT --> ADD
-    ROOT --> NAAS
-    ADD --> WL["Addon Applications<br/>in-cluster destination"]
-    NAAS --> TEN["Tenant NaaS apps<br/>in-cluster destination"]
-  end
-
-  HUB -->|"push Argo CD + root Apps<br/>destination.name = spoke"| ROOT
-```
-
-## Hub path
-
-1. Apply `bootstrap/control-plane/exclude/bootstrap.yaml` on the hub (list generator → in-cluster).
-2. Hub syncs `bootstrap/control-plane/addons/hub/`:
-   - `addons-argo-cd-appset.yaml` — still uses `destination.name` so hub can install Argo CD on spokes.
-   - `addons-spoke-root-appset.yaml` — pushes `bootstrap/spoke/root-apps/*.yaml` into spoke `argocd` namespaces.
-
-Hub workloads under `bootstrap/control-plane/workloads/` remain hub/in-cluster concerns (unchanged pattern).
-
-## Spoke path (autonomous)
-
-Spoke root Applications (created by hub) point at:
-
-- `bootstrap/control-plane/addons/spoke/` — addon ApplicationSets with **in-cluster** destination.
-- `idp-argocd-apps` `appsets/` — NaaS ApplicationSet with **in-cluster** destination.
-
-Spoke Argo CD Agent in **autonomous** mode owns sync for those ApplicationSets and Applications. See [Argo CD Agent architecture](https://argocd-agent.readthedocs.io/stable/concepts/architecture/) for mode semantics.
-
-## Spoke `in-cluster` secret: labels vs annotations
-
-On the spoke, the Argo CD cluster secret is usually named `in-cluster`, not the logical cluster name (e.g. `labs`). Put enable flags on **labels** and logical path segments on **annotations**.
-
-### Labels (enable flags)
-
-```text
-enable_argocd=true
-enable_naas=true
-enable_metrics_server=true
-# plus other enable_* labels for spoke addons as needed
-```
-
-### Annotations (logical names + repo pins)
-
-```text
-addons_cluster_name=<logical>   # e.g. labs → environments/clusters/labs/addons/...
-naas_cluster_name=<logical>     # same segment → env/<env>/labs/*.yaml
-addons_repo_url=...
-addons_repo_revision=...
-addons_repo_basepath=...
-```
-
-`addons_cluster_name` selects `environments/clusters/<name>/addons` values for spoke addon AppSets (not `{{name}}`, which would be `in-cluster`). The NaaS git file path uses `*/{{metadata.annotations.naas_cluster_name}}/*.yaml`. If those annotations are missing, cluster-specific values and tenant paths will not match.
-
-## Migration notes
-
-| Before | After |
-| --- | --- |
-| All AppSets under `addons/oss/` | Hub: `addons/hub/`; spoke: `addons/spoke/`; `oss/` deprecated |
-| Bootstrap synced every cluster | Bootstrap list → hub in-cluster only |
-| Addon AppSets used `destination.name` | Spoke AppSets use `server: https://kubernetes.default.svc` |
-| NaaS AppSet often hub-pushed with `destination.name` | Spoke-local AppSet; in-cluster destination |
-
-1. Deploy hub bootstrap from `exclude/bootstrap.yaml`.
-2. Ensure spokes have `enable_argocd=true` and repo annotations for spoke-root.
-3. Label/annotate spoke `in-cluster` secret (`enable_*` labels; `addons_cluster_name` / `naas_cluster_name` annotations).
-4. Remove obsolete hub Applications that previously pushed spoke addon AppSets from `oss/`.
+| **ADR** | [adr/0001-hub-spoke-argocd-agents.md](adr/0001-hub-spoke-argocd-agents.md) |
+| **Overview** | [architecture/hub-spoke.md](architecture/hub-spoke.md) |
+| **Diagrams** | [architecture/diagrams.md](architecture/diagrams.md) |
+| **Day-2 ops** | [operations/day-2.md](operations/day-2.md) |
+| **Runbooks** | [runbooks/](runbooks/) |
+| **Docs index** | [README.md](README.md) |

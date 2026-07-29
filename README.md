@@ -15,7 +15,7 @@ This repo is split for **hub bootstrap** vs **spoke-owned** reconciliation:
 
 **Hub workloads** (Keycloak, Vault bootstrap, ESO config, etc.) stay under `bootstrap/control-plane/workloads/` and remain hub / in-cluster concerns.
 
-Full diagram and migration: **[docs/hub-spoke-architecture.md](docs/hub-spoke-architecture.md)**.
+Docs: **[docs/README.md](docs/README.md)** · [ADR-0001](docs/adr/0001-hub-spoke-argocd-agents.md) · [architecture](docs/architecture/hub-spoke.md) · [diagrams](docs/architecture/diagrams.md) · [day-2 ops](docs/operations/day-2.md) · [runbooks](docs/runbooks/).
 
 Addon ApplicationSets (labels / charts):
 
@@ -48,7 +48,12 @@ AWS addon AppSets under `bootstrap/control-plane/addons/aws/` are removed (direc
 │   └── spoke
 │       └── root-apps/        # spoke-addons + spoke-naas Applications
 ├── docs
-│   └── hub-spoke-architecture.md
+│   ├── README.md                 # docs index
+│   ├── adr/                      # Architecture Decision Records
+│   ├── architecture/             # overview + Mermaid diagrams
+│   ├── runbooks/                 # operational procedures
+│   ├── operations/               # day-2 operating model
+│   └── hub-spoke-architecture.md # legacy pointer
 └── environments
     ├── default/addons/
     ├── dev|staging|prod/addons/
