@@ -1,7 +1,4 @@
 # local-transit-engine-values.yaml
 #
-# Copied from:
-#   https://github.com/ravichandrapatel/platform-apps-of-apps/blob/main/addons/vault/local-transit-engine-values.yaml
-#
-# NOTE: Upstream file is currently empty (0 bytes on main as of import).
-# Place local Vault transit-engine Helm overrides here when available.
+# Local Vault transit-engine Helm overrides for the DevZero IDP lab.
+# Populate with transit engine values as needed.
