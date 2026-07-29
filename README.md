@@ -2,56 +2,79 @@
 
 Based on [gitops-bridge-argocd-control-plane-template](https://github.com/gitops-bridge-dev/gitops-bridge-argocd-control-plane-template).
 
-Folder structure and **cluster generators** match the upstream GitOps Bridge pattern. Addon ApplicationSets are limited to:
+## Hub–spoke Argo CD Agents
 
-| ApplicationSet | Enable label | Chart |
+This repo is split for **hub bootstrap** vs **spoke-owned** reconciliation:
+
+| Zone | Path | Who syncs |
 | --- | --- | --- |
-| `addons-argocd` | `enable_argocd=true` | argo-cd |
-| `addons-metrics-server` | `enable_metrics_server=true` | metrics-server |
-| `addons-envoy-gateway` | `enable_envoy_gateway=true` | gateway-helm (OCI) |
-| `addons-gitea` | `enable_gitea=true` | gitea |
+| Hub AppSets | `bootstrap/control-plane/addons/hub/` | Hub Argo CD (in-cluster) |
+| Spoke AppSets | `bootstrap/control-plane/addons/spoke/` | Spoke Argo CD Agent (autonomous, in-cluster) |
+| Spoke roots | `bootstrap/spoke/root-apps/` | Hub pushes onto spokes; spoke then reconciles |
+| Deprecated | `bootstrap/control-plane/addons/oss/` | Moved → see `hub/` and `spoke/` |
 
-AWS addon AppSets under `bootstrap/control-plane/addons/aws/` are removed (directories kept). `clusters-appset` and `exclude/bootstrap.yaml` are unchanged from upstream.
+**Hub workloads** (Keycloak, Vault bootstrap, ESO config, etc.) stay under `bootstrap/control-plane/workloads/` and remain hub / in-cluster concerns.
+
+Full diagram and migration: **[docs/hub-spoke-architecture.md](docs/hub-spoke-architecture.md)**.
+
+Addon ApplicationSets (labels / charts):
+
+| ApplicationSet | Enable label | Owner |
+| --- | --- | --- |
+| `addons-argocd` | `enable_argocd=true` | **Hub** (pushes to spokes) |
+| `addons-spoke-root` | `enable_argocd=true` | **Hub** (pushes root Apps) |
+| `addons-metrics-server` | `enable_metrics_server=true` | **Spoke** |
+| `addons-envoy-gateway` | `enable_envoy_gateway=true` | **Spoke** |
+| `addons-gitea` | `enable_gitea=true` | **Spoke** |
+| `addons-backstage`, `vault`, `keycloak`, `tekton`, `external-secrets`, `cloudnative-pg` | matching `enable_*` | **Spoke** |
+
+AWS addon AppSets under `bootstrap/control-plane/addons/aws/` are removed (directories kept).
 
 ## Repository layout
 
 ```text
 ├── bootstrap
-│   └── control-plane
-│       ├── addons
-│       │   ├── aws/          # placeholder (.keep)
-│       │   └── oss/          # metrics-server, envoy-gateway, gitea AppSets
-│       ├── clusters
-│       │   └── clusters-appset.yaml
-│       └── exclude
-│           └── bootstrap.yaml
+│   ├── control-plane
+│   │   ├── addons
+│   │   │   ├── aws/          # placeholder (.keep)
+│   │   │   ├── hub/          # argo-cd + spoke-root AppSets (hub-only)
+│   │   │   ├── spoke/        # addon AppSets (spoke Argo CD, in-cluster)
+│   │   │   └── oss/          # deprecated → hub/ + spoke/
+│   │   ├── clusters
+│   │   │   └── clusters-appset.yaml
+│   │   ├── exclude
+│   │   │   └── bootstrap.yaml   # hub-only list → addons/hub
+│   │   └── workloads/        # hub in-cluster workloads
+│   └── spoke
+│       └── root-apps/        # spoke-addons + spoke-naas Applications
+├── docs
+│   └── hub-spoke-architecture.md
 └── environments
-    ├── default/addons/       # shared Helm values
+    ├── default/addons/
     ├── dev|staging|prod/addons/
-    └── environments/clusters/<name>/addons/  (e.g. labs)
+    └── clusters/<name>/addons/
 ```
 
-## Generators (unchanged pattern)
+## Generators
 
-Each OSS ApplicationSet uses a **merge** generator:
+**Hub** `addons-argo-cd` still uses a **merge** generator and `destination.name` so the hub can install Argo CD on registered spokes.
 
-1. `clusters` selector: `akuity.io/argo-cd-cluster-name NotIn [in-cluster]` **and** `enable_<addon>=true`
-2. Optional version overrides for `environment: staging` / `environment: prod`
-
-Value files resolve via cluster annotations/labels:
+**Spoke** addon AppSets use in-cluster `destination.server` and are loaded by the spoke root Application `spoke-addons`. Value files still resolve via cluster annotations/labels when generators select clusters:
 
 - `addons_repo_url` / `addons_repo_revision` / `addons_repo_basepath`
 - `environments/default|{{environment}}/addons/<chart>/values.yaml`
 - `clusters/{{name}}/addons/<chart>/values.yaml`
 
-## Bootstrap
-
-Apply upstream-style bootstrap (from `exclude/`, so it is not double-synced):
+## Bootstrap (hub only)
 
 ```bash
-# Label/annotate spoke clusters (not the Argo CD management "in-cluster" when using Akuity convention)
-# enable_metrics_server=true enable_envoy_gateway=true enable_gitea=true
-# addons_repo_url=... addons_repo_revision=main addons_repo_basepath=
-
+# Apply on the hub Argo CD cluster (not double-synced from exclude/)
 kubectl apply -f bootstrap/control-plane/exclude/bootstrap.yaml
+
+# Spokes: enable_argocd=true (+ addon enable_* labels as needed)
+# NaaS on spoke in-cluster secret: enable_naas=true, naas_cluster_name=<cluster path segment>
 ```
+
+Bootstrap uses a **list** generator targeting `https://kubernetes.default.svc` and repo
+`https://github.com/ravichandrapatel/idp-gitops-bridge.git` (annotation-based overrides can be
+reintroduced later if needed).

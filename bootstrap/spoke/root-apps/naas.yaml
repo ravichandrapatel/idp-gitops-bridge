@@ -1,0 +1,30 @@
+# FILE_NAME: naas.yaml
+# DESCRIPTION: Spoke root Application — syncs NaaS ApplicationSet from idp-argocd-apps
+# VERSION: 1.0.0
+# AUTHORS: ravichandrapatel
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spoke-naas
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: gitops-bridge-spoke
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ravichandrapatel/idp-argocd-apps.git
+    targetRevision: HEAD
+    path: appsets
+    directory:
+      recurse: false
+      include: '*.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

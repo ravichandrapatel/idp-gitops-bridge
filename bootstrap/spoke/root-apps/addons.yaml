@@ -1,0 +1,30 @@
+# FILE_NAME: addons.yaml
+# DESCRIPTION: Spoke root Application — syncs spoke addon ApplicationSets (in-cluster)
+# VERSION: 1.0.0
+# AUTHORS: ravichandrapatel
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spoke-addons
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: gitops-bridge-spoke
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ravichandrapatel/idp-gitops-bridge.git
+    targetRevision: HEAD
+    path: bootstrap/control-plane/addons/spoke
+    directory:
+      recurse: false
+      include: 'addons-*-appset.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

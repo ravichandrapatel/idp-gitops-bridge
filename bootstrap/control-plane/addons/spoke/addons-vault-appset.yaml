@@ -1,4 +1,5 @@
 ---
+# SPOKE-OWNED: reconciled by spoke Argo CD (in-cluster). Not hub-pushed.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -61,7 +62,7 @@ spec:
             recurse: true
       destination:
         namespace: '{{values.addonChartNamespace}}'
-        name: '{{name}}'
+        server: https://kubernetes.default.svc
       syncPolicy:
         automated: {}
         syncOptions:
