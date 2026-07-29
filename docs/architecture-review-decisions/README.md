@@ -1,13 +1,17 @@
-# Architecture review decisions
+# FILE_NAME: README.md
+# DESCRIPTION: Legacy redirect — architecture review decisions merged into docs/adr
+# VERSION: 2.0.0
+# AUTHORS: ravichandrapatel
 
-Design notes and values for the DevZero IDP GitOps control plane.
+# Moved → `docs/adr/`
 
-Control-plane ADRs and hub–spoke ops docs: **[../README.md](../README.md)** · **[ADR-0001](../adr/0001-hub-spoke-argocd-agents.md)**.
+Architecture review decisions and ADRs are **one tree** now.
 
-## Vault
-
-| File | Purpose |
+| Former | New |
 | --- | --- |
-| [vault/readme.md](vault/readme.md) | Vault Hub architectural specification (incl. transit / multi-tenant guidance) |
-| [vault/values.yaml](vault/values.yaml) | Primary Helm values for the Vault addon |
-| [vault/local-transit-engine-values.yaml](vault/local-transit-engine-values.yaml) | Local transit-engine values overlay |
+| This folder | [../adr/](../adr/) |
+| Vault spec + values | [../adr/vault/](../adr/vault/) |
+| Vault decision record | [../adr/0002-vault-hub.md](../adr/0002-vault-hub.md) |
+| Hub–spoke ADR | [../adr/0001-hub-spoke-argocd-agents.md](../adr/0001-hub-spoke-argocd-agents.md) |
+
+Docs index: [../README.md](../README.md)

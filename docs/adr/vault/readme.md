@@ -8,7 +8,7 @@
 | --- | --- |
 | **Owner / Lead** | @[Name] |
 | **Service Status** | Alpha / Beta / Production |
-| **Repository / Code** | `idp-gitops-bridge/docs/architecture-review-decisions/vault` |
+| **Repository / Code** | `idp-gitops-bridge/docs/adr/vault` (ADR-0002) |
 | **Dependencies** | Vault OSS/Enterprise, Kubernetes (hub/spoke), Terraform (modules) |
 | **Slack / Support** | #[Channel-Name] |
 

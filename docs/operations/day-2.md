@@ -69,7 +69,7 @@ Adjust for production when promoting beyond labs.
 | --- | --- | --- |
 | Spoke kubeconfig on hub | Hub | Required for bootstrap Applications only; minimize scope |
 | Git / OCI pull creds | Spoke (+ hub as needed) | Repo secrets in Argo CD; OCI for NaaS chart |
-| Vault / OIDC / DB | Hub workloads + ESO | See [architecture-review-decisions/vault](../architecture-review-decisions/vault/readme.md) |
+| Vault / OIDC / DB | Hub workloads + ESO | See [ADR-0002](../adr/0002-vault-hub.md) / [vault spec](../adr/vault/readme.md) |
 | `in-cluster` annotations | Spoke | Non-secret path selectors; still treat repo URLs as config |
 
 Never commit kubeconfigs, tokens, or `.env` files into this repository.
