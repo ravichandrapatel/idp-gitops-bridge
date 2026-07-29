@@ -53,18 +53,32 @@ Spoke root Applications (created by hub) point at:
 - `bootstrap/control-plane/addons/spoke/` — addon ApplicationSets with **in-cluster** destination.
 - `idp-argocd-apps` `appsets/` — NaaS ApplicationSet with **in-cluster** destination.
 
-Spoke Argo CD Agent in **autonomous** mode owns sync for those ApplicationSets and Applications. See [Argo CD Agent](https://argo-cd.readthedocs.io/) autonomous / agent documentation for mode semantics.
+Spoke Argo CD Agent in **autonomous** mode owns sync for those ApplicationSets and Applications. See [Argo CD Agent architecture](https://argocd-agent.readthedocs.io/stable/concepts/architecture/) for mode semantics.
 
-## NaaS cluster identity
+## Spoke `in-cluster` secret: labels vs annotations
 
-On the spoke, the cluster secret is often named `in-cluster`, not `labs`. Annotate the secret:
+On the spoke, the Argo CD cluster secret is usually named `in-cluster`, not the logical cluster name (e.g. `labs`). Put enable flags on **labels** and logical path segments on **annotations**.
+
+### Labels (enable flags)
 
 ```text
+enable_argocd=true
 enable_naas=true
-naas_cluster_name=<path-segment>   # e.g. labs → env/<env>/labs/*.yaml
+enable_metrics_server=true
+# plus other enable_* labels for spoke addons as needed
 ```
 
-The NaaS git file path uses `*/{{metadata.annotations.naas_cluster_name}}/*.yaml`. If the annotation is missing, the git generator will not match tenant files under the logical cluster name.
+### Annotations (logical names + repo pins)
+
+```text
+addons_cluster_name=<logical>   # e.g. labs → environments/clusters/labs/addons/...
+naas_cluster_name=<logical>     # same segment → env/<env>/labs/*.yaml
+addons_repo_url=...
+addons_repo_revision=...
+addons_repo_basepath=...
+```
+
+`addons_cluster_name` selects `environments/clusters/<name>/addons` values for spoke addon AppSets (not `{{name}}`, which would be `in-cluster`). The NaaS git file path uses `*/{{metadata.annotations.naas_cluster_name}}/*.yaml`. If those annotations are missing, cluster-specific values and tenant paths will not match.
 
 ## Migration notes
 
@@ -77,5 +91,5 @@ The NaaS git file path uses `*/{{metadata.annotations.naas_cluster_name}}/*.yaml
 
 1. Deploy hub bootstrap from `exclude/bootstrap.yaml`.
 2. Ensure spokes have `enable_argocd=true` and repo annotations for spoke-root.
-3. Label/annotate spoke `in-cluster` secret for NaaS (`enable_naas`, `naas_cluster_name`).
+3. Label/annotate spoke `in-cluster` secret (`enable_*` labels; `addons_cluster_name` / `naas_cluster_name` annotations).
 4. Remove obsolete hub Applications that previously pushed spoke addon AppSets from `oss/`.

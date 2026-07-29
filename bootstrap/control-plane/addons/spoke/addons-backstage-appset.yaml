@@ -57,7 +57,7 @@ spec:
             valueFiles:
               - $values/{{metadata.annotations.addons_repo_basepath}}environments/default/addons/{{values.addonChart}}/values.yaml
               - $values/{{metadata.annotations.addons_repo_basepath}}environments/{{metadata.labels.environment}}/addons/{{values.addonChart}}/values.yaml
-              - $values/{{metadata.annotations.addons_repo_basepath}}environments/clusters/{{name}}/addons/{{values.addonChart}}/values.yaml
+              - $values/{{metadata.annotations.addons_repo_basepath}}environments/clusters/{{metadata.annotations.addons_cluster_name}}/addons/{{values.addonChart}}/values.yaml
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{values.addonChartNamespace}}'

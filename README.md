@@ -63,7 +63,7 @@ AWS addon AppSets under `bootstrap/control-plane/addons/aws/` are removed (direc
 
 - `addons_repo_url` / `addons_repo_revision` / `addons_repo_basepath`
 - `environments/default|{{environment}}/addons/<chart>/values.yaml`
-- `clusters/{{name}}/addons/<chart>/values.yaml`
+- `clusters/{{metadata.annotations.addons_cluster_name}}/addons/<chart>/values.yaml` (logical name; secret is often `in-cluster`)
 
 ## Bootstrap (hub only)
 
@@ -72,7 +72,7 @@ AWS addon AppSets under `bootstrap/control-plane/addons/aws/` are removed (direc
 kubectl apply -f bootstrap/control-plane/exclude/bootstrap.yaml
 
 # Spokes: enable_argocd=true (+ addon enable_* labels as needed)
-# NaaS on spoke in-cluster secret: enable_naas=true, naas_cluster_name=<cluster path segment>
+# Spoke in-cluster secret: enable_* labels; addons_cluster_name + naas_cluster_name annotations
 ```
 
 Bootstrap uses a **list** generator targeting `https://kubernetes.default.svc` and repo
