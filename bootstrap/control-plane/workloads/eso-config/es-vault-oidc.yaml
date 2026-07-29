@@ -1,0 +1,29 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: vault-oidc
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  refreshInterval: 30s
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: vault-oidc
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      data:
+        clientSecret: "{{ .clientSecret }}"
+        clientID: "{{ .clientID }}"
+  data:
+    - secretKey: clientSecret
+      remoteRef:
+        key: idp/oidc/vault
+        property: clientSecret
+    - secretKey: clientID
+      remoteRef:
+        key: idp/oidc/vault
+        property: clientID

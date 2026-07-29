@@ -1,0 +1,59 @@
+# FILE_NAME: values.yaml
+# DESCRIPTION: Vault standalone + chart-native HTTPRoute (Envoy Gateway)
+# VERSION: 0.2.0
+
+global:
+  enabled: true
+  tlsDisable: true
+
+injector:
+  enabled: false
+
+server:
+  dev:
+    enabled: false
+  ha:
+    enabled: false
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+      storage "file" {
+        path = "/vault/data"
+      }
+  dataStorage:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 250m
+  service:
+    type: ClusterIP
+  # HashiCorp chart native Gateway API (no extraManifests/extraObjects in this chart)
+  httproute:
+    enabled: true
+    labels:
+      app.kubernetes.io/part-of: devzero-idp
+    hostnames:
+      - vault.devzero.local
+    parentRefs:
+      - name: lab
+        namespace: lab-gateway
+        sectionName: https
+    matches:
+      - path:
+          type: PathPrefix
+          value: /
+
+ui:
+  enabled: true
+  serviceType: ClusterIP

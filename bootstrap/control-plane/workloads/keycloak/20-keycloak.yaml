@@ -1,0 +1,37 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: idp-pg-rw.idp-data.svc.cluster.local
+    port: 5432
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db
+      key: username
+    passwordSecret:
+      name: keycloak-db
+      key: password
+  http:
+    httpEnabled: true
+  hostname:
+    # Full URL so issuer/token/jwks all include https://…:8443 (Gateway host port).
+    # backchannelDynamic must be false — otherwise token_endpoint is advertised as
+    # http://keycloak.devzero.local (no :8443) and oauth2 token exchange returns 404.
+    hostname: https://keycloak.devzero.local:8443
+    backchannelDynamic: false
+    strict: true
+  proxy:
+    headers: xforwarded
+  ingress:
+    enabled: false
+  bootstrapAdmin:
+    user:
+      secret: keycloak-admin

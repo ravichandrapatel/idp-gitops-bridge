@@ -1,0 +1,33 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: idp-pg
+  namespace: idp-data
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.6
+  storage:
+    size: 5Gi
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: idp-pg-superuser
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+      secret:
+        name: idp-pg-app
+  managed:
+    roles:
+      - name: keycloak
+        ensure: present
+        login: true
+        passwordSecret:
+          name: idp-pg-keycloak
+      - name: backstage
+        ensure: present
+        login: true
+        passwordSecret:
+          name: idp-pg-backstage

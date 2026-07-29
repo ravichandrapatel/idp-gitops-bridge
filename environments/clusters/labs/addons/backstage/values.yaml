@@ -1,0 +1,9 @@
+# FILE_NAME: values.yaml
+# DESCRIPTION: Labs cluster overrides for Backstage Helm chart
+# VERSION: 0.1.0
+
+# Keep the Kubernetes-plugin demo Deployment/Service in default ns
+demoWorkload:
+  enabled: true
+  name: example-website
+  namespace: default

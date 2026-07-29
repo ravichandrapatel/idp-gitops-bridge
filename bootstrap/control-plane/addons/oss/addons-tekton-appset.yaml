@@ -1,0 +1,37 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: addons-tekton
+spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: enable_tekton
+              operator: In
+              values: ['true']
+  template:
+    metadata:
+      name: addon-{{name}}-tekton
+      annotations:
+        argocd.argoproj.io/sync-wave: "7"
+    spec:
+      project: default
+      source:
+        repoURL: '{{metadata.annotations.addons_repo_url}}'
+        targetRevision: '{{metadata.annotations.addons_repo_revision}}'
+        path: '{{metadata.annotations.addons_repo_basepath}}bootstrap/control-plane/workloads/tekton'
+        directory:
+          recurse: true
+      destination:
+        name: '{{name}}'
+        namespace: tekton-pipelines
+      syncPolicy:
+        automated: {}
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true

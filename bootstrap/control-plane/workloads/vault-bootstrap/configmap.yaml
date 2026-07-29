@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-bootstrap-script
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  bootstrap.sh: |
+    #!/bin/sh
+    set -eu
+    apk add --no-cache curl jq openssl >/dev/null
+
+    echo "[T-01] wait for vault"
+    for i in $(seq 1 90); do
+      code=$(curl -s -o /tmp/vh.json -w "%{http_code}" "$VAULT_ADDR/v1/sys/health?standbyok=true&uninitcode=200&sealedcode=200" || true)
+      if [ "$code" = "200" ] || [ "$code" = "429" ] || [ "$code" = "501" ] || [ "$code" = "503" ]; then
+        break
+      fi
+      sleep 5
+    done
+
+    TOKEN_K8S=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    KAPI=https://kubernetes.default.svc
+
+    kget_secret() {
+      curl -sS --cacert "$CACERT" -H "Authorization: Bearer $TOKEN_K8S" \
+        "$KAPI/api/v1/namespaces/$1/secrets/$2"
+    }
+
+    kput_secret() {
+      ns="$1"; name="$2"; body="$3"
+      code=$(curl -sS -o /tmp/kresp -w "%{http_code}" --cacert "$CACERT" \
+        -H "Authorization: Bearer $TOKEN_K8S" -H 'Content-Type: application/json' \
+        -X POST "$KAPI/api/v1/namespaces/${ns}/secrets" -d "$body" || true)
+      if [ "$code" = "409" ] || [ "$code" = "200" ]; then
+        curl -sS --cacert "$CACERT" -H "Authorization: Bearer $TOKEN_K8S" -H 'Content-Type: application/json' \
+          -X PUT "$KAPI/api/v1/namespaces/${ns}/secrets/${name}" -d "$body" >/dev/null
+      elif [ "$code" != "201" ]; then
+        echo "secret write failed ns=$ns name=$name code=$code body=$(cat /tmp/kresp)"
+        return 1
+      fi
+    }
+
+    ensure_ns() {
+      ns="$1"
+      body=$(jq -n --arg n "$ns" '{apiVersion:"v1",kind:"Namespace",metadata:{name:$n}}')
+      curl -sS --cacert "$CACERT" -H "Authorization: Bearer $TOKEN_K8S" -H 'Content-Type: application/json' \
+        -X POST "$KAPI/api/v1/namespaces" -d "$body" >/dev/null 2>&1 || true
+    }
+
+    INITED=$(curl -s "$VAULT_ADDR/v1/sys/init" | jq -r .initialized)
+    if [ "$INITED" = "false" ]; then
+      echo "[T-02] init vault"
+      INIT_OUT=$(curl -sf -X PUT "$VAULT_ADDR/v1/sys/init" \
+        -H 'Content-Type: application/json' \
+        -d '{"secret_shares":1,"secret_threshold":1}')
+      UNSEAL=$(echo "$INIT_OUT" | jq -r .keys_base64[0])
+      ROOT=$(echo "$INIT_OUT" | jq -r .root_token)
+      BODY=$(jq -n --arg u "$UNSEAL" --arg r "$ROOT" \
+        '{apiVersion:"v1",kind:"Secret",metadata:{name:"vault-bootstrap",namespace:"vault",labels:{"app.kubernetes.io/part-of":"devzero-idp"}},type:"Opaque",stringData:{unseal_key:$u,root_token:$r}}')
+      kput_secret vault vault-bootstrap "$BODY"
+    else
+      echo "[T-02] load existing vault-bootstrap secret"
+      SEC=$(kget_secret vault vault-bootstrap)
+      UNSEAL=$(echo "$SEC" | jq -r '.data.unseal_key' | base64 -d)
+      ROOT=$(echo "$SEC" | jq -r '.data.root_token' | base64 -d)
+    fi
+
+    SEALED=$(curl -s "$VAULT_ADDR/v1/sys/seal-status" | jq -r .sealed)
+    if [ "$SEALED" = "true" ]; then
+      echo "[T-03] unseal"
+      curl -sf -X PUT "$VAULT_ADDR/v1/sys/unseal" \
+        -H 'Content-Type: application/json' \
+        -d "$(jq -n --arg k "$UNSEAL" '{key:$k}')" >/dev/null
+    fi
+
+    export VAULT_TOKEN="$ROOT"
+    echo "[T-04] enable kv-v2 at secret/"
+    curl -s -o /dev/null -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"type":"kv","options":{"version":"2"}}' \
+      "$VAULT_ADDR/v1/sys/mounts/secret" || true
+
+    gen() { openssl rand -base64 32 | tr -d '/+=' | cut -c1-32; }
+
+    put_if_absent() {
+      path="$1"
+      user="$2"
+      if curl -sf -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/${path}" >/dev/null 2>&1; then
+        echo "keep secret/data/${path}"
+        return 0
+      fi
+      pass=$(gen)
+      curl -sf -X POST -H "X-Vault-Token: $VAULT_TOKEN" -H 'Content-Type: application/json' \
+        -d "$(jq -n --arg u "$user" --arg p "$pass" '{data:{username:$u,password:$p}}')" \
+        "$VAULT_ADDR/v1/secret/data/${path}" >/dev/null
+      echo "wrote secret/data/${path}"
+    }
+
+    put_if_absent idp/postgres/superuser postgres
+    put_if_absent idp/postgres/app app
+    put_if_absent idp/postgres/keycloak keycloak
+    put_if_absent idp/postgres/backstage backstage
+    put_if_absent idp/keycloak/admin admin
+
+    # Fixed lab OIDC secrets (must match KeycloakRealmImport)
+    seed_oidc() {
+      path="$1"; cid="$2"; secret="$3"
+      curl -sf -X POST -H "X-Vault-Token: $VAULT_TOKEN" -H 'Content-Type: application/json' \
+        -d "$(jq -n --arg c "$cid" --arg s "$secret" '{data:{clientID:$c,clientSecret:$s}}')" \
+        "$VAULT_ADDR/v1/secret/data/${path}" >/dev/null
+      echo "seeded ${path}"
+    }
+    seed_oidc idp/oidc/argocd argocd lab-oidc-argocd-change-me-01
+    seed_oidc idp/oidc/vault vault lab-oidc-vault-change-me-01
+    seed_oidc idp/oidc/tekton-dashboard tekton-dashboard lab-oidc-tekton-change-me-01
+    seed_oidc idp/oidc/backstage backstage lab-oidc-backstage-change-me-01
+
+    echo "[T-05] policy + ESO token"
+    POLICY=$(printf '%s\n' \
+      'path "secret/data/idp/*" { capabilities = ["create","update","read","list"] }' \
+      'path "secret/metadata/idp/*" { capabilities = ["read","list"] }')
+    curl -sf -X PUT -H "X-Vault-Token: $VAULT_TOKEN" -H 'Content-Type: application/json' \
+      -d "$(jq -n --arg p "$POLICY" '{policy:$p}')" \
+      "$VAULT_ADDR/v1/sys/policies/acl/eso-idp" >/dev/null
+
+    ESO_TOKEN=$(curl -sf -X POST -H "X-Vault-Token: $VAULT_TOKEN" -H 'Content-Type: application/json' \
+      -d '{"policies":["eso-idp"],"ttl":"768h","renewable":true,"period":"768h"}' \
+      "$VAULT_ADDR/v1/auth/token/create" | jq -r .auth.client_token)
+
+    ensure_ns external-secrets
+    ensure_ns idp-data
+    ensure_ns keycloak
+    ensure_ns argocd
+    ensure_ns tekton-pipelines
+
+    BODY=$(jq -n --arg t "$ESO_TOKEN" \
+      '{apiVersion:"v1",kind:"Secret",metadata:{name:"vault-eso-token",namespace:"external-secrets",labels:{"app.kubernetes.io/part-of":"devzero-idp"}},type:"Opaque",stringData:{token:$t}}')
+    kput_secret external-secrets vault-eso-token "$BODY"
+    BODY2=$(jq -n --arg t "$ESO_TOKEN" \
+      '{apiVersion:"v1",kind:"Secret",metadata:{name:"vault-eso-token",namespace:"vault"},type:"Opaque",stringData:{token:$t}}')
+    kput_secret vault vault-eso-token "$BODY2"
+    BODY_ROOT=$(jq -n --arg r "$ROOT" \
+      '{apiVersion:"v1",kind:"Secret",metadata:{name:"vault-root-token",namespace:"keycloak",labels:{"app.kubernetes.io/part-of":"devzero-idp"}},type:"Opaque",stringData:{root_token:$r}}')
+    kput_secret keycloak vault-root-token "$BODY_ROOT"
+
+    echo "[T-06] bootstrap complete"

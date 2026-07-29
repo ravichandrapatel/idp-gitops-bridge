@@ -1,0 +1,29 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: idp-pg-superuser
+  namespace: idp-data
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: idp-pg-superuser
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      data:
+        username: "{{ .username }}"
+        password: "{{ .password }}"
+  data:
+    - secretKey: username
+      remoteRef:
+        key: idp/postgres/superuser
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: idp/postgres/superuser
+        property: password

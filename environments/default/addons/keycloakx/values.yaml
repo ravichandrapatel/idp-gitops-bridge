@@ -1,0 +1,63 @@
+replicas: 1
+
+image:
+  repository: quay.io/keycloak/keycloak
+
+command:
+  - "/opt/keycloak/bin/kc.sh"
+  - "start"
+  - "--http-enabled=true"
+  - "--hostname-strict=false"
+  - "--proxy-headers=xforwarded"
+
+database:
+  vendor: postgres
+  hostname: idp-pg-rw.idp-data.svc.cluster.local
+  port: 5432
+  database: keycloak
+  username: keycloak
+  existingSecret: keycloak-db
+  existingSecretKey: password
+
+http:
+  relativePath: "/"
+
+proxy:
+  enabled: true
+  mode: xforwarded
+
+health:
+  enabled: true
+
+metrics:
+  enabled: false
+
+service:
+  type: ClusterIP
+  httpPort: 80
+
+extraEnv: |
+  - name: KEYCLOAK_ADMIN
+    valueFrom:
+      secretKeyRef:
+        name: keycloak-admin
+        key: username
+  - name: KEYCLOAK_ADMIN_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: keycloak-admin
+        key: password
+  - name: KC_HOSTNAME
+    value: https://keycloak.devzero.local:8443
+  - name: KC_HOSTNAME_ADMIN
+    value: https://keycloak.devzero.local:8443
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+affinity: ""

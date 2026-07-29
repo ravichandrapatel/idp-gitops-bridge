@@ -1,0 +1,22 @@
+local/
+*.tgz
+Chart.lock
+.DS_Store
+# --- secrets / local credentials (public-repo hygiene) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!*.pem.example
+!*.key.example
+*id_rsa*
+*.p12
+*.pfx
+**/kubeconfig
+**/kubeconfig.*
+*.tfstate
+*.tfstate.*
+**/service-account*.json
+**/secrets.local.yaml
+**/overlays/private/

@@ -1,0 +1,54 @@
+# FILE_NAME: values.yaml
+# DESCRIPTION: Default Backstage Helm values (Gitea chart gitea-lab/backstage)
+# VERSION: 0.1.0
+
+# Keep Namespace in-chart so Argo does not mark it requiresPruning
+createNamespace: true
+
+fullnameOverride: backstage
+
+app:
+  baseUrl: https://backstage.devzero.local:8443
+  authEnvironment: production
+
+backend:
+  image:
+    repository: gitea.devzero.local:8443/giteaadmin/backstage-backend
+    tag: latest
+    pullPolicy: Always
+
+frontend:
+  image:
+    repository: gitea.devzero.local:8443/giteaadmin/backstage-frontend
+    tag: latest
+    pullPolicy: Always
+
+httpRoute:
+  enabled: true
+  hostnames:
+    - backstage.devzero.local
+  parentRefs:
+    - name: lab
+      namespace: lab-gateway
+      sectionName: https
+
+externalSecrets:
+  enabled: true
+
+registryPullSecret:
+  create: true
+
+labTls:
+  create: true
+
+sessionSecret:
+  create: true
+
+rbac:
+  create: true
+  # Stable name to adopt existing ClusterRole from directory deploy
+  clusterRoleName: backstage-read
+
+serviceAccount:
+  create: true
+  name: backstage

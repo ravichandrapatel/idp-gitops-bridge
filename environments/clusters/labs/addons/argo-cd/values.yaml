@@ -1,0 +1,73 @@
+# FILE_NAME: values.yaml
+# DESCRIPTION: Labs Argo CD — ClusterIP + chart-native HTTPRoute (Envoy Gateway)
+# VERSION: 0.3.0
+
+global:
+  domain: argocd.devzero.local
+
+server:
+  service:
+    type: ClusterIP
+    annotations: {}
+  ingress:
+    enabled: false
+  ingressGrpc:
+    enabled: false
+  # Chart-native Gateway API (argo-cd >= 10.x). hostnames must be set;
+  # chart only falls back to global.domain when server.listenerset.enabled.
+  httproute:
+    enabled: true
+    labels:
+      app.kubernetes.io/part-of: devzero-idp
+    parentRefs:
+      - name: lab
+        namespace: lab-gateway
+        sectionName: https
+    hostnames:
+      - argocd.devzero.local
+
+configs:
+  params:
+    # TLS terminated at Envoy Gateway
+    server.insecure: true
+  cm:
+    url: https://argocd.devzero.local:8443
+    # rootCA = DevZero Lab CA (clusters/lab/certs/ca.crt) — Keycloak TLS
+    oidc.config: |
+      name: Keycloak
+      issuer: https://keycloak.devzero.local:8443/realms/idp
+      clientID: argocd
+      clientSecret: $oidc.keycloak.clientSecret
+      requestedScopes: ["openid", "profile", "email"]
+      rootCA: |
+        -----BEGIN CERTIFICATE-----
+        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
+        IRRW
+        -----END CERTIFICATE-----

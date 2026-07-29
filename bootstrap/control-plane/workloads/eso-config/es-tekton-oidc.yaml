@@ -1,0 +1,29 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: tekton-oidc
+  namespace: tekton-pipelines
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  refreshInterval: 30s
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: tekton-oidc
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      data:
+        clientSecret: "{{ .clientSecret }}"
+        clientID: "{{ .clientID }}"
+  data:
+    - secretKey: clientSecret
+      remoteRef:
+        key: idp/oidc/tekton-dashboard
+        property: clientSecret
+    - secretKey: clientID
+      remoteRef:
+        key: idp/oidc/tekton-dashboard
+        property: clientID

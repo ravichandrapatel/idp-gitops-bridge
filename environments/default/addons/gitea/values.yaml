@@ -1,0 +1,79 @@
+# FILE_NAME: values.yaml
+# DESCRIPTION: Gitea behind Envoy Gateway (TLS terminated at Gateway)
+# VERSION: 0.2.0
+
+replicaCount: 1
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+    # Avoid headless None — Gateway needs a normal ClusterIP Service
+    clusterIP: ""
+  ssh:
+    type: NodePort
+    port: 22
+    nodePort: 32222
+    clusterIP: ""
+
+ingress:
+  enabled: false
+
+# Chart-native Gateway API (gitea-charts/gitea >= 12.x)
+gatewayAPI:
+  enabled: true
+  core:
+    httpRoute:
+      enabled: true
+      tls: true
+      labels:
+        app.kubernetes.io/part-of: devzero-idp
+      parentRefs:
+        - name: lab
+          namespace: lab-gateway
+          sectionName: https
+      hostnames:
+        - gitea.devzero.local
+
+gitea:
+  admin:
+    username: giteaAdmin
+    password: "ChangeMeLabOnlyGitea"
+    email: gitea@devzero.local
+  config:
+    server:
+      DOMAIN: gitea.devzero.local
+      ROOT_URL: https://gitea.devzero.local:8443/
+      SSH_DOMAIN: gitea.devzero.local
+      SSH_PORT: 32222
+      DISABLE_SSH: false
+      START_SSH_SERVER: true
+    service:
+      DISABLE_REGISTRATION: false
+    security:
+      INSTALL_LOCK: true
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+postgresql-ha:
+  enabled: false
+
+postgresql:
+  enabled: true
+  global:
+    postgresql:
+      auth:
+        password: gitea
+        database: gitea
+        username: gitea
+
+valkey-cluster:
+  enabled: false
+
+valkey:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false

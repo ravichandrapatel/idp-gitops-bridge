@@ -1,0 +1,30 @@
+.:53 {
+    errors
+    health {
+       lameduck 5s
+    }
+    ready
+    hosts {
+       10.96.48.145 keycloak.devzero.local
+       10.96.48.145 vault.devzero.local
+       10.96.48.145 argocd.devzero.local
+       10.96.48.145 tekton.devzero.local
+       fallthrough
+    }
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+       pods insecure
+       fallthrough in-addr.arpa ip6.arpa
+       ttl 30
+    }
+    prometheus :9153
+    forward . 8.8.8.8 1.1.1.1 {
+       max_concurrent 1000
+    }
+    cache 30 {
+       disable success cluster.local
+       disable denial cluster.local
+    }
+    loop
+    reload
+    loadbalance
+}

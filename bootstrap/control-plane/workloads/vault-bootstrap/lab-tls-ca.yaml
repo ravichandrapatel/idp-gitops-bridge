@@ -1,0 +1,26 @@
+# PLACEHOLDER — do not commit real CA material to a public repo.
+# Provide the lab TLS CA via sealed-secret / ExternalSecrets / private overlay.
+# Expected Secret shape (create out-of-band):
+#   apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: lab-tls-ca
+#     namespace: vault
+#   type: Opaque
+#   data:
+#     ca.crt: <base64 PEM>
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lab-tls-ca
+  namespace: vault
+  labels:
+    app.kubernetes.io/part-of: devzero-idp
+  annotations:
+    note: "Replace via private overlay or ExternalSecrets before apply"
+type: Opaque
+stringData:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    REPLACE_WITH_LAB_CA_PEM
+    -----END CERTIFICATE-----

@@ -1,0 +1,29 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: bootstrap-addons
+  namespace: argocd
+spec:
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - clusters: {}
+  template:
+    metadata:
+      name: 'bootstrap-addons'
+    spec:
+      project: default
+      source:
+        repoURL: '{{metadata.annotations.addons_repo_url}}'
+        # Only AppSet manifests — workloads live under bootstrap/control-plane/workloads/
+        path: '{{metadata.annotations.addons_repo_basepath}}bootstrap/control-plane/addons/oss'
+        targetRevision: '{{metadata.annotations.addons_repo_revision}}'
+        directory:
+          recurse: false
+          include: 'addons-*-appset.yaml'
+      destination:
+        namespace: 'argocd'
+        name: '{{name}}'
+      syncPolicy:
+        automated: {}

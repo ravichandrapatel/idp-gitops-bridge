@@ -1,0 +1,25 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: keycloak
+  namespace: idp-data
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  name: keycloak
+  owner: keycloak
+  cluster:
+    name: idp-pg
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: backstage
+  namespace: idp-data
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  name: backstage
+  owner: backstage
+  cluster:
+    name: idp-pg

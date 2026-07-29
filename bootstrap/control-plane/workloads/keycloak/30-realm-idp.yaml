@@ -1,0 +1,81 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: KeycloakRealmImport
+metadata:
+  name: idp-realm
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  keycloakCRName: keycloak
+  realm:
+    realm: idp
+    enabled: true
+    registrationAllowed: false
+    # Lab SSO users (password set once via admin API / vault bootstrap helper)
+    users:
+      - username: admin
+        enabled: true
+        email: admin@devzero.local
+        emailVerified: true
+        firstName: Lab
+        lastName: Admin
+        credentials:
+          - type: password
+            value: ChangeMeLabOnlyKeycloak
+            temporary: false
+      - username: developer
+        enabled: true
+        email: developer@devzero.local
+        emailVerified: true
+        firstName: Lab
+        lastName: Developer
+        credentials:
+          - type: password
+            value: ChangeMeLabOnlyKeycloak
+            temporary: false
+    clients:
+      - clientId: argocd
+        name: Argo CD
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        secret: "lab-oidc-argocd-change-me-01"
+        redirectUris:
+          - "https://argocd.devzero.local:8443/auth/callback"
+        webOrigins: ["*"]
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: true
+      - clientId: vault
+        name: Vault
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        secret: "lab-oidc-vault-change-me-01"
+        redirectUris:
+          - "https://vault.devzero.local:8443/ui/vault/auth/oidc/oidc/callback"
+          - "http://localhost:8250/oidc/callback"
+        webOrigins: ["*"]
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: true
+      - clientId: tekton-dashboard
+        name: Tekton Dashboard
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        secret: "lab-oidc-tekton-change-me-01"
+        redirectUris:
+          - "https://tekton.devzero.local:8443/*"
+        webOrigins: ["*"]
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: true
+      - clientId: backstage
+        name: Backstage
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        secret: "lab-oidc-backstage-change-me-01"
+        redirectUris:
+          - "https://backstage.devzero.local:8443/api/auth/oidc/handler/frame"
+        webOrigins: ["*"]
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: true
