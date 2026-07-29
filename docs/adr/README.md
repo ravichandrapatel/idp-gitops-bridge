@@ -5,8 +5,7 @@
 
 # Architecture Decision Records
 
-Single home for **binding decisions** and their supporting artifacts (specs, values overlays).  
-Former `docs/architecture-review-decisions/` content lives here.
+Single home for **binding decisions** and their supporting artifacts (specs, values overlays).
 
 Status values: `Proposed` · `Accepted` · `Superseded` · `Deprecated`.
 

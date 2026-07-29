@@ -9,13 +9,11 @@ Control-plane docs for the DevZero IDP GitOps Bridge (hub–spoke Argo CD Agents
 
 | Section | Path | Purpose |
 | --- | --- | --- |
-| **ADRs** | [adr/](adr/) | Decisions + artifacts (includes Vault; former architecture-review-decisions) |
+| **ADRs** | [adr/](adr/) | Decisions + artifacts (includes Vault Hub) |
 | **Architecture** | [architecture/](architecture/) | Overview + Mermaid diagrams |
 | **Runbooks** | [runbooks/](runbooks/) | Step-by-step operational procedures |
 | **Day-2 operations** | [operations/](operations/) | Steady-state ops, ownership, SLOs |
 | **Cluster notes** | [cluster/](cluster/) | Lab cluster fragments (e.g. CoreDNS) |
-
-Legacy folder [architecture-review-decisions/](architecture-review-decisions/) redirects to [adr/](adr/).
 
 ## Start here
 

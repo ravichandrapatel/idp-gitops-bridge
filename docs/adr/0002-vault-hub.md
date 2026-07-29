@@ -15,14 +15,14 @@
 
 ## Context
 
-The IDP needs a single secrets and identity broker for multi-tenant Kubernetes (hub and spokes) without per-tenant Vault sprawl. Prior design work lived under `docs/architecture-review-decisions/vault/`; that material is now the artifact set for this ADR.
+The IDP needs a single secrets and identity broker for multi-tenant Kubernetes (hub and spokes) without per-tenant Vault sprawl. The full specification and Helm value overlays live under [vault/](vault/).
 
 ## Decision
 
 1. Run a **Vault Hub** (OSS unless Enterprise is explicitly licensed) as the centralized security broker.
 2. Enforce multi-tenancy via **path convention + policies** in OSS (Vault Namespaces / native DR replication remain Enterprise-only and labeled as such in the spec).
 3. Keep the authoritative narrative and SOPs in [vault/readme.md](vault/readme.md); keep deployable Helm overlays next to the ADR under [vault/](vault/).
-4. Retire the separate `docs/architecture-review-decisions/` tree as a content home — ADRs are the single decision index.
+4. Keep Vault decisions and artifacts under `docs/adr/` only (no parallel review-decisions tree).
 
 ## Consequences
 
